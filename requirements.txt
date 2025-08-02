@@ -3,3 +3,5 @@ flask-cors
 tensorflow
 pillow
 numpy
+tensorflow==2.15.0
+
