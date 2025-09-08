@@ -1,0 +1,17 @@
+# Ignore model files (too large for GitHub)
+keras_model.h5
+
+# Ignore uploaded images
+uploads/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+venv/
+env/
+
+# Ignore system or OS-generated files
+.DS_Store
+Thumbs.db
