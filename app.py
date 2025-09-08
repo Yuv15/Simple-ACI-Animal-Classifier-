@@ -7,33 +7,37 @@ import numpy as np
 import traceback
 
 app = Flask(__name__, static_folder='static')
-CORS(app, origins="*")
+CORS(app)
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Load model
+# Model and labels will be loaded dynamically on first request
 MODEL_PATH = './keras_model.h5'
 LABELS_PATH = './labels.txt'
-np.set_printoptions(suppress=True)
 
-try:
-    model = load_model(MODEL_PATH, compile=False)
-    print("✅ Model loaded successfully.")
-except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    # This will prevent the app from starting if the model is missing
-    raise
+# Function to load the model and labels
+def get_model():
+    if not hasattr(app, 'model'):
+        print("Loading model and labels for the first time...")
+        np.set_printoptions(suppress=True)
+        try:
+            app.model = load_model(MODEL_PATH, compile=False)
+            print("✅ Model loaded successfully.")
+        except Exception as e:
+            print(f"❌ Error loading model: {e}")
+            raise
 
-try:
-    with open(LABELS_PATH, 'r') as f:
-        class_names = [line.strip()[2:] for line in f.readlines()]
-    print("✅ Labels loaded:", class_names)
-except Exception as e:
-    print(f"❌ Error loading labels: {e}")
-    # This will prevent the app from starting if the labels are missing
-    raise
+        try:
+            with open(LABELS_PATH, 'r') as f:
+                app.class_names = [line.strip()[2:] for line in f.readlines()]
+            print("✅ Labels loaded:", app.class_names)
+        except Exception as e:
+            print(f"❌ Error loading labels: {e}")
+            raise
+
+    return app.model, app.class_names
 
 # Custom error handler for internal server errors
 @app.errorhandler(500)
@@ -41,7 +45,7 @@ def handle_internal_server_error(e):
     traceback.print_exc()
     return jsonify({"error": "An internal server error occurred.", "details": str(e)}), 500
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST', 'HEAD'])
 def serve_main():
     return send_from_directory('.', 'mainpage.html')
 
@@ -79,7 +83,10 @@ def upload_file():
         img_array = np.array(img, dtype=np.float32) / 255.0
         img_array = img_array.reshape(1, 224, 224, 3)
         print("✅ Image pre-processed successfully.")
-
+        
+        # Load the model and class names
+        model, class_names = get_model()
+        
         print("Running model prediction...")
         prediction = model.predict(img_array)
         index = np.argmax(prediction)
