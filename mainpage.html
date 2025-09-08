@@ -485,7 +485,7 @@
                     formData.append('file', selectedFile);
 
                     // Send file to backend (replace with your actual endpoint)
-                    const response = await fetch('https://simple-animal-classifier.onrender.com/', {
+                    const response = await fetch('https://simple-animal-classifier.onrender.com/upload', {
                         method: 'POST',
                         body: formData
                     });
